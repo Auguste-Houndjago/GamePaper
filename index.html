@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Peer-to-Peer Rock-Paper-Scissors</title>
+        <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="scoreDisplay">Your current win streak: <span id="score">0</span></div>
+<div id="displayArea">
+  <div id="user">
+    <h2>you</h2>
+    <div class="rpsanim">
+      <div class="curr">✊</div>
+    </div>
+    <div id="choiceBtns">
+      <button onclick="makeChoice('Rock')">Rock</button>
+      <button onclick="makeChoice('Paper')">Paper</button>
+      <button onclick="makeChoice('Scissors')">Scissors</button>
+    </div>
+  </div>
+  <div id="opponent">
+    <h2>opponent</h2>
+    <div class="rpsanim">
+      <div class="curr">✊</div>
+    </div>
+  </div>
+</div>
+<div id="feedback">choose your weapon!</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+let localConnection;
+let remoteConnection;
+let signalingServer;
+let localChoice;
+let opponentChoice;
+let score = 0;
+
+const signalingUrl = 'http://localhost:3000'; // Update with your signaling server URL
+const opts = {
+  Rock: { icon: "✊", winner: "Scissors" },
+  Paper: { icon: "✋", winner: "Rock" },
+  Scissors: { icon: "✌️", winner: "Paper" },
+  default: { icon: "✊", winner: "" }
+};
+
+function setupWebRTC() {
+  signalingServer = io(signalingUrl);
+
+  localConnection = new RTCPeerConnection();
+  remoteConnection = new RTCPeerConnection();
+
+  localConnection.onicecandidate = ({ candidate }) => {
+    if (candidate) {
+      signalingServer.emit('candidate', candidate);
+    }
+  };
+
+  remoteConnection.onicecandidate = ({ candidate }) => {
+    if (candidate) {
+      signalingServer.emit('candidate', candidate);
+    }
+  };
+
+  signalingServer.on('offer', async (offer) => {
+    await remoteConnection.setRemoteDescription(offer);
+    const answer = await remoteConnection.createAnswer();
+    await remoteConnection.setLocalDescription(answer);
+    signalingServer.emit('answer', answer);
+  });
+
+  signalingServer.on('answer', async (answer) => {
+    await localConnection.setRemoteDescription(answer);
+  });
+
+  signalingServer.on('candidate', (candidate) => {
+    localConnection.addIceCandidate(new RTCIceCandidate(candidate));
+    remoteConnection.addIceCandidate(new RTCIceCandidate(candidate));
+  });
+
+  // Setting up data channels for move exchange
+  const dataChannel = localConnection.createDataChannel('game');
+  dataChannel.onmessage = (event) => handleOpponentChoice(event.data);
+
+  remoteConnection.ondatachannel = (event) => {
+    const receiveChannel = event.channel;
+    receiveChannel.onmessage = (event) => handleOpponentChoice(event.data);
+  };
+}
+
+function makeChoice(choice) {
+  localChoice = choice;
+  displayChoice('user', opts[choice].icon);
+  localConnection.createOffer().then(offer => {
+    localConnection.setLocalDescription(offer);
+    signalingServer.emit('offer', offer);
+  });
+}
+
+function handleOpponentChoice(choice) {
+  opponentChoice = choice;
+  displayChoice('opponent', opts[choice].icon);
+  determineResult();
+}
+
+function displayChoice(player, icon) {
+  document.querySelector(`#${player} .curr`).innerText = icon;
+}
+
+function determineResult() {
+  if (localChoice === opponentChoice) {
+    document.getElementById('feedback').innerText = "It's a tie 👔";
+  } else if (opponentChoice === opts[localChoice].winner) {
+    score++;
+    document.getElementById('feedback').innerText = "You Win 🎉";
+  } else {
+    score = 0;
+    document.getElementById('feedback').innerText = "You Lose 😭";
+  }
+  document.getElementById('score').innerText = score;
+}
+
+window.onload = setupWebRTC;
+</script>
+</body>
+</html>
