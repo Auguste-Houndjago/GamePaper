@@ -147,3 +147,23 @@ font-family: monospace;
 	margin-top:1em;
 	box-shadow: .25em .25em rgba(0,0,0,0.25);
 }
+
+
+#connectionArea {
+    display: none;
+    text-align: center;
+    margin: 20px 0;
+  }
+  
+  #gameMode {
+    text-align: center;
+    margin: 20px 0;
+  }
+  
+  #connectionArea button,
+  #gameMode button {
+    padding: 10px 20px;
+    margin: 5px;
+    cursor: pointer;
+  }
+  

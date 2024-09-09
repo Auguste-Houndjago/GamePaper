@@ -4,10 +4,13 @@
 <meta charset="UTF-8">
 <title>Peer-to-Peer Rock-Paper-Scissors</title>
         <link rel="stylesheet" href="style.css">
+        <script src="script.js" defer></script>
 </head>
 <body>
 <div id="scoreDisplay">Your current win streak: <span id="score">0</span></div>
 <div id="displayArea">
+
+
   <div id="user">
     <h2>you</h2>
     <div class="rpsanim">
@@ -27,6 +30,20 @@
   </div>
 </div>
 <div id="feedback">choose your weapon!</div>
+
+<div id="gameMode">
+    <h3>Choose Game Mode</h3>
+    <button id="singlePlayerBtn">1 vs Computer</button>
+    <button id="multiPlayerBtn">Peer to Peer</button>
+  </div>
+  
+  <div id="connectionArea" style="display:none;">
+    <h3>Peer to Peer Mode</h3>
+    <button id="createBtn">Create Game</button>
+    <button id="joinBtn">Join Game</button>
+    <input type="text" id="gameCode" placeholder="Enter Game Code">
+  </div>
+  
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
